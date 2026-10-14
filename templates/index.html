@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Customer Churn Predictor</title>
+    <style>
+        * { box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f7f6; margin: 0; padding: 40px 20px; }
+        .container { max-width: 500px; background: #ffffff; margin: 0 auto; padding: 30px; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        h2 { text-align: center; color: #333; margin-bottom: 25px; }
+        .form-group { margin-bottom: 18px; }
+        label { display: block; font-weight: 600; margin-bottom: 6px; color: #555; }
+        input, select { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 6px; font-size: 15px; }
+        button { width: 100%; padding: 12px; background-color: #007bff; color: white; border: none; border-radius: 6px; font-size: 16px; font-weight: bold; cursor: pointer; transition: background 0.3s; }
+        button:hover { background-color: #0056b3; }
+        #result { margin-top: 25px; padding: 15px; border-radius: 6px; text-align: center; font-size: 18px; font-weight: bold; display: none; }
+        .high-risk { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .low-risk { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h2>Customer Churn Predictor</h2>
+
+        <form id="churnForm">
+            <div class="form-group">
+                <label for="tenure">Tenure (Months):</label>
+                <input type="number" id="tenure" required min="1" max="100" value="12">
+            </div>
+
+            <div class="form-group">
+                <label for="monthly_charges">Monthly Charges ($):</label>
+                <input type="number" step="0.01" id="monthly_charges" required value="70.50">
+            </div>
+
+            <div class="form-group">
+                <label for="total_charges">Total Charges ($):</label>
+                <input type="number" step="0.01" id="total_charges" required value="846.00">
+            </div>
+
+            <div class="form-group">
+                <label for="contract_type">Contract Type:</label>
+                <select id="contract_type">
+                    <option value="0">Month-to-Month</option>
+                    <option value="1">One / Two Year Contract</option>
+                </select>
+            </div>
+
+            <button type="submit">Predict Churn Risk</button>
+        </form>
+
+        <div id="result"></div>
+    </div>
+
+    <script>
+        document.getElementById('churnForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+
+            const payload = {
+                tenure: document.getElementById('tenure').value,
+                monthly_charges: document.getElementById('monthly_charges').value,
+                total_charges: document.getElementById('total_charges').value,
+                contract_type: document.getElementById('contract_type').value
+            };
+
+            const resultDiv = document.getElementById('result');
+            resultDiv.style.display = 'block';
+            resultDiv.style.backgroundColor = '#e2e3e5';
+            resultDiv.style.color = '#383d41';
+            resultDiv.innerText = 'Analyzing profile...';
+
+            try {
+                const response = await fetch('/predict', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    resultDiv.className = data.churn_prediction === 1 ? 'high-risk' : 'low-risk';
+                    resultDiv.innerHTML = `
+                        Prediction: ${data.risk_label}<br>
+                        Probability: ${data.churn_probability}%
+                    `;
+                } else {
+                    resultDiv.innerText = 'Error: ' + data.error;
+                }
+            } catch (err) {
+                resultDiv.innerText = 'Failed to connect to backend server.';
+            }
+        });
+    </script>
+</body>
+</html>
